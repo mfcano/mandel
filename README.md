@@ -13,7 +13,7 @@ This is a practical exercise for software engineering candidates. The project pr
 
 ## Time Allocation
 
-Please spend a maximum of 5 hours on this exercise. We understand there are always more improvements possible, but we want to see what you prioritize within a realistic time constraint.
+Please spend a maximum of 8 hours on this exercise. We understand there are always more improvements possible, but we want to see what you prioritize within a realistic time constraint.
 
 ## The Task
 
