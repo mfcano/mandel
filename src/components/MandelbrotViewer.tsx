@@ -30,8 +30,8 @@ const hexToHsv = (hex: string) => {
   const diff = max - min;
 
   let h = 0;
-  let s = max === 0 ? 0 : diff / max;
-  let v = max;
+  const s = max === 0 ? 0 : diff / max;
+  const v = max;
 
   if (diff !== 0) {
     if (max === r) {
@@ -84,7 +84,7 @@ const interpolateHue = (h1: number, h2: number, t: number) => {
   h2 = ((h2 % 360) + 360) % 360;
 
   // Find shortest path around the circle
-  let diff = h2 - h1;
+  const diff = h2 - h1;
   if (Math.abs(diff) > 180) {
     // Go the other way around
     if (diff > 0) {
