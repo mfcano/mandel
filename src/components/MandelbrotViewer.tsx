@@ -113,9 +113,30 @@ const interpolateHsv = (hsv1: { h: number, s: number, v: number },
   return hsvToRgb(h, s, v);
 };
 
+function getDimensions() {
+  const dpr = window.devicePixelRatio || 1;
+  const maxWidth = Math.min(window.innerWidth * 0.9, CANVAS_MAX_SIZE);
+  const maxHeight = Math.min(window.innerHeight * 0.85, CANVAS_MAX_SIZE);
+  const aspectRatio = window.innerWidth / window.innerHeight;
+
+  let width, height;
+  if (aspectRatio > 1) {
+    height = maxHeight;
+    width = height * aspectRatio;
+  } else {
+    width = maxWidth;
+    height = width / aspectRatio;
+  }
+
+  return {
+    width: Math.round(width * dpr),
+    height: Math.round(height * dpr),
+  };
+}
+
 const MandelbrotViewer = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [dimensions, setDimensions] = useState(getDimensions());
   const [center, setCenter] = useState({ x: -0.5, y: 0 });
   const [zoom, setZoom] = useState(1.5);
   const [isDragging, setIsDragging] = useState(false);
@@ -124,31 +145,12 @@ const MandelbrotViewer = () => {
   const [endColor, setEndColor] = useState('#000000');
   const [powerFactor, setPowerFactor] = useState(0.2);
 
+  function updateDimensions() {
+    setDimensions(getDimensions());
+  }
+
   useEffect(() => {
-    const updateDimensions = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const maxWidth = Math.min(window.innerWidth * 0.9, CANVAS_MAX_SIZE);
-      const maxHeight = Math.min(window.innerHeight * 0.85, CANVAS_MAX_SIZE);
-      const aspectRatio = window.innerWidth / window.innerHeight;
-
-      let width, height;
-      if (aspectRatio > 1) {
-        height = maxHeight;
-        width = height * aspectRatio;
-      } else {
-        width = maxWidth;
-        height = width / aspectRatio;
-      }
-
-      setDimensions({
-        width: Math.round(width * dpr),
-        height: Math.round(height * dpr)
-      });
-    };
-
     window.addEventListener('resize', updateDimensions);
-    updateDimensions();
-
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
