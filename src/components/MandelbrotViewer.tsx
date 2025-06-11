@@ -36,6 +36,13 @@ function getDimensions() {
   return { width: Math.round(width * dpr), height: Math.round(height * dpr) };
 }
 
+function formatNumber(num: number) {
+  if (Math.abs(num) < 0.0001 || Math.abs(num) > 9999) {
+    return num.toExponential(4);
+  }
+  return num.toPrecision(6);
+}
+
 const MandelbrotViewer: React.FC = () => {
   const workerRef = useRef<Worker | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -49,6 +56,15 @@ const MandelbrotViewer: React.FC = () => {
   const [powerFactor, setPowerFactor] = useState(0.2);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+
+  // Buffers to handle formatting in inputs
+  const [zoomText, setZoomText] = useState(zoom.toString());
+  const [centerInputX, setCenterXText] = useState<string>(center.x.toString());
+  const [centerInputY, setCenterYText] = useState<string>(center.y.toString());
+
+  useEffect(() => setZoomText(formatNumber(zoom)), [zoom]);
+  useEffect(() => setCenterXText(formatNumber(center.x)), [center.x]);
+  useEffect(() => setCenterYText(formatNumber(center.y)), [center.y]);
 
   // Debounced poster
   const postRender = useMemo(
@@ -182,11 +198,34 @@ const MandelbrotViewer: React.FC = () => {
     setZoom(newZoom);
   };
 
-  const formatNumber = (num: number) => {
-    if (Math.abs(num) < 0.0001 || Math.abs(num) > 9999) {
-      return num.toExponential(4);
+  const commitZoom = () => {
+    const v = parseFloat(zoomText);
+    if (!isNaN(v) && v > 0) {
+      setZoom(v);
+      setZoomText(formatNumber(v));
+    } else {
+      setZoomText(zoom.toString());
     }
-    return num.toPrecision(6);
+  };
+
+  const commitCenterX = () => {
+    const parsed = parseFloat(centerInputX);
+    if (!isNaN(parsed)) {
+      setCenter((c) => ({ ...c, x: parsed }));
+      setCenterXText(formatNumber(center.x));
+    } else {
+      setCenterXText(center.x.toString());
+    }
+  };
+
+  const commitCenterY = () => {
+    const parsed = parseFloat(centerInputY);
+    if (!isNaN(parsed)) {
+      setCenter((c) => ({ ...c, y: parsed }));
+      setCenterYText(formatNumber(center.y));
+    } else {
+      setCenterYText(center.y.toString());
+    }
   };
 
   return (
@@ -264,6 +303,55 @@ const MandelbrotViewer: React.FC = () => {
             </option>
           ))}
         </select>
+
+        <div className="flex items-center">
+          <label className="mr-2">Center X:</label>
+          <input
+            type="text"
+            value={centerInputX}
+            pattern="[0-9]+([\.,][0-9]+)?"
+            onChange={(e) => setCenterXText(e.target.value)}
+            onBlur={commitCenterX}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                commitCenterX();
+                e.preventDefault();
+              }
+            }}
+            className="w-36 px-2 py-1 border rounded mr-4"
+          />
+
+          <label className="mr-2">Center Y:</label>
+          <input
+            type="text"
+            pattern="[0-9]+([\.,][0-9]+)?"
+            value={centerInputY}
+            onChange={(e) => setCenterYText(e.target.value)}
+            onBlur={commitCenterY}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                commitCenterY();
+                e.preventDefault();
+              }
+            }}
+            className="w-36 px-2 py-1 border rounded"
+          />
+        </div>
+
+        <div className="flex items-center">
+          <label>Zoom:</label>
+          <input
+            type="text"
+            value={zoomText}
+            pattern="[0-9]+([\.,][0-9]+)?"
+            onChange={(e) => setZoomText(e.target.value)}
+            onBlur={commitZoom}
+            onKeyDown={(e) =>
+              e.key === "Enter" && (commitZoom(), e.preventDefault())
+            }
+            className="w-32 px-2 py-1 border rounded"
+          />
+        </div>
       </div>
       <div className="text-sm font-mono bg-gray-100 px-4 py-2 rounded">
         Center: ({formatNumber(center.x)}, {formatNumber(center.y)}) | Zoom:{" "}
