@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useMemo, useState } from "react";
 import debounce from "lodash.debounce";
+
 import MandelbrotWorker from "../worker.ts?worker";
+import { hexToHsv, interpolateHsv } from "../colors";
 
 // Favorite spots
 const FAVORITE_SPOTS = {
@@ -37,6 +39,7 @@ function getDimensions() {
 const MandelbrotViewer: React.FC = () => {
   const workerRef = useRef<Worker | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const gradientRef = useRef<HTMLCanvasElement>(null);
 
   const [dimensions, setDimensions] = useState(getDimensions());
   const [center, setCenter] = useState({ x: -0.5, y: 0 });
@@ -59,6 +62,36 @@ const MandelbrotViewer: React.FC = () => {
       ),
     []
   );
+
+  // Draw gradient preview whenever colors or powerFactor change
+  useEffect(() => {
+    const canvas = gradientRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    const startHsv = hexToHsv(startColor);
+    const endHsv = hexToHsv(endColor);
+
+    const imageData = ctx.createImageData(w, h);
+    const data = imageData.data;
+
+    // Fill each pixel for full height
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const t = Math.pow(x / (w - 1), powerFactor);
+        const { r, g, b } = interpolateHsv(startHsv, endHsv, t);
+        const idx = 4 * (y * w + x);
+        data[idx] = r;
+        data[idx + 1] = g;
+        data[idx + 2] = b;
+        data[idx + 3] = 255;
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+  }, [startColor, endColor, powerFactor]);
 
   // Init worker
   useEffect(() => {
@@ -125,7 +158,7 @@ const MandelbrotViewer: React.FC = () => {
   };
 
   const handleWheel = (e: React.WheelEvent) => {
-    e.cancelable && e.preventDefault();
+    if (e.cancelable) e.preventDefault();
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -203,6 +236,14 @@ const MandelbrotViewer: React.FC = () => {
             value={powerFactor}
             onChange={(e) => setPowerFactor(Number(e.target.value))}
             className="w-20 px-2 py-1 border rounded"
+          />
+        </div>
+        <div>
+          <canvas
+            ref={gradientRef}
+            width={300}
+            height={10}
+            className="rounded"
           />
         </div>
         <select
