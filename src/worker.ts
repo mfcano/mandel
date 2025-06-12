@@ -1,4 +1,10 @@
-import { hexToHsv, interpolateHsv } from "./colors";
+import { interpolateGradientStops } from "./colors";
+
+interface ColorStop {
+  id: string;
+  color: string;
+  position: number;
+}
 
 type RenderMessage = {
   canvas: HTMLCanvasElement;
@@ -6,8 +12,7 @@ type RenderMessage = {
   height: number;
   center: { x: number; y: number };
   zoom: number;
-  startColor: string;
-  endColor: string;
+  colorStops: ColorStop[];
   powerFactor: number;
 };
 
@@ -31,8 +36,7 @@ function render({
   height,
   center,
   zoom,
-  startColor,
-  endColor,
+  colorStops,
   powerFactor,
 }: RenderMessage) {
   const ctx = canvas.getContext("2d");
@@ -44,8 +48,6 @@ function render({
 
   const imageData = ctx.createImageData(width, height);
   const data = imageData.data;
-  const startHsv = hexToHsv(startColor);
-  const endHsv = hexToHsv(endColor);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -87,7 +89,7 @@ function render({
       const idx = 4 * (y * width + x);
       if (iter < MAX_ITERATIONS) {
         const t = Math.pow(iter / MAX_ITERATIONS, powerFactor);
-        const { r, g, b } = interpolateHsv(startHsv, endHsv, t);
+        const { r, g, b } = interpolateGradientStops(colorStops, t);
         data[idx] = r;
         data[idx + 1] = g;
         data[idx + 2] = b;

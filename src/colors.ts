@@ -1,3 +1,5 @@
+import type { ColorStop } from "./components/GradientEditor";
+
 // Convert hex color to HSV
 export const hexToHsv = (hex: string) => {
   hex = hex.replace("#", "");
@@ -120,3 +122,31 @@ export const interpolateHsv = (
 
   return hsvToRgb(h, s, v);
 };
+
+// Helper function to interpolate between multiple gradient stops
+export function interpolateGradientStops(
+  stops: ColorStop[],
+  t: number
+): { r: number; g: number; b: number } {
+  // Find the two stops to interpolate between
+  let startStop = stops[0];
+  let endStop = stops[stops.length - 1];
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (t >= stops[i].position && t <= stops[i + 1].position) {
+      startStop = stops[i];
+      endStop = stops[i + 1];
+      break;
+    }
+  }
+
+  // Calculate local t between these two stops
+  const localT =
+    (t - startStop.position) / (endStop.position - startStop.position);
+
+  // Interpolate between the two colors
+  const startHsv = hexToHsv(startStop.color);
+  const endHsv = hexToHsv(endStop.color);
+
+  return interpolateHsv(startHsv, endHsv, localT);
+}

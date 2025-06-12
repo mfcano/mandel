@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useMemo, useState } from "react";
 import debounce from "lodash.debounce";
 
 import MandelbrotWorker from "../worker.ts?worker";
-import { hexToHsv, interpolateHsv } from "../colors";
+import { interpolateGradientStops } from "../colors";
+import GradientEditor, { type ColorStop } from "./GradientEditor";
 
 // Favorite spots
 const FAVORITE_SPOTS = {
@@ -51,8 +52,10 @@ const MandelbrotViewer: React.FC = () => {
   const [dimensions, setDimensions] = useState(getDimensions());
   const [center, setCenter] = useState({ x: -0.5, y: 0 });
   const [zoom, setZoom] = useState(1.5);
-  const [startColor, setStartColor] = useState("#FFFFFF");
-  const [endColor, setEndColor] = useState("#000000");
+  const [colorStops, setColorStops] = useState<ColorStop[]>([
+    { id: "start", color: "#FFFFFF", position: 0 },
+    { id: "end", color: "#000000", position: 1 },
+  ]);
   const [powerFactor, setPowerFactor] = useState(0.2);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -88,9 +91,6 @@ const MandelbrotViewer: React.FC = () => {
     const w = canvas.width;
     const h = canvas.height;
 
-    const startHsv = hexToHsv(startColor);
-    const endHsv = hexToHsv(endColor);
-
     const imageData = ctx.createImageData(w, h);
     const data = imageData.data;
 
@@ -98,7 +98,7 @@ const MandelbrotViewer: React.FC = () => {
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const t = Math.pow(x / (w - 1), powerFactor);
-        const { r, g, b } = interpolateHsv(startHsv, endHsv, t);
+        const { r, g, b } = interpolateGradientStops(colorStops, t);
         const idx = 4 * (y * w + x);
         data[idx] = r;
         data[idx + 1] = g;
@@ -107,7 +107,7 @@ const MandelbrotViewer: React.FC = () => {
       }
     }
     ctx.putImageData(imageData, 0, 0);
-  }, [startColor, endColor, powerFactor]);
+  }, [colorStops, powerFactor]);
 
   // Init worker
   useEffect(() => {
@@ -126,14 +126,13 @@ const MandelbrotViewer: React.FC = () => {
       height: dimensions.height,
       center,
       zoom,
-      startColor,
-      endColor,
+      colorStops,
       powerFactor,
     });
     return () => {
       postRender.cancel();
     };
-  }, [dimensions, center, zoom, startColor, endColor, powerFactor, postRender]);
+  }, [dimensions, center, zoom, colorStops, powerFactor, postRender]);
 
   // Resize
   useEffect(() => {
@@ -247,22 +246,12 @@ const MandelbrotViewer: React.FC = () => {
         className="border border-gray-300 shadow-lg rounded"
       />
       <div className="flex flex-wrap gap-4 items-center justify-center">
-        <div className="flex items-center">
-          <label className="mr-2">Start Color:</label>
-          <input
-            type="color"
-            value={startColor}
-            onChange={(e) => setStartColor(e.target.value)}
-            className="w-12 h-8"
-          />
-        </div>
-        <div className="flex items-center">
-          <label className="mr-2">End Color:</label>
-          <input
-            type="color"
-            value={endColor}
-            onChange={(e) => setEndColor(e.target.value)}
-            className="w-12 h-8"
+        <div>
+          <GradientEditor
+            value={colorStops}
+            onChange={setColorStops}
+            width={300}
+            height={30}
           />
         </div>
         <div className="flex items-center">
