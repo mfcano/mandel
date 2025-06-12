@@ -49,22 +49,35 @@ function render({
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      // map pixel → complex plane
       const real = center.x + ((x - width / 2) * (2.5 / zoom)) / width;
       const imag = center.y + ((y - height / 2) * (2.5 / zoom)) / width;
 
-      let iter;
-      // if in cardioid or bulb, it never escapes → treat as MAX
+      let zr = 0,
+        zi = 0;
+      let prevZr = 0,
+        prevZi = 0;
+      let iter = 0;
+
+      // cardioid/bulb quick test
       if (inMainCardioid(real, imag) || inPeriod2Bulb(real, imag)) {
         iter = MAX_ITERATIONS;
       } else {
-        // otherwise run the normal escape-time loop
-        let zr = 0,
-          zi = 0;
-        iter = 0;
+        // escape-time with period-1 check
         while (zr * zr + zi * zi < 4 && iter < MAX_ITERATIONS) {
           const newZr = zr * zr - zi * zi + real;
           const newZi = 2 * zr * zi + imag;
+
+          // periodicity check: did we return to the previous z?
+          if (newZr === prevZr && newZi === prevZi) {
+            iter = MAX_ITERATIONS;
+            break;
+          }
+
+          // shift history
+          prevZr = zr;
+          prevZi = zi;
+
+          // advance
           zr = newZr;
           zi = newZi;
           iter++;
@@ -79,7 +92,7 @@ function render({
         data[idx + 1] = g;
         data[idx + 2] = b;
       } else {
-        // interior points → black
+        // treat as interior
         data[idx] = data[idx + 1] = data[idx + 2] = 0;
       }
       data[idx + 3] = 255;
@@ -87,6 +100,7 @@ function render({
   }
 
   ctx.putImageData(imageData, 0, 0);
+  console.timeEnd();
 }
 
 let offscreenCanvas: HTMLCanvasElement | null = null;
