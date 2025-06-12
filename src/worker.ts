@@ -102,7 +102,6 @@ function render({
   }
 
   ctx.putImageData(imageData, 0, 0);
-  console.timeEnd();
 }
 
 let offscreenCanvas: HTMLCanvasElement | null = null;
